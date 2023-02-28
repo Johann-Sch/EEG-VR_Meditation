@@ -72,3 +72,7 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+.idea
+VR_Test.uproject.DotSettings.user
+Plugins/Developer/RiderLink
+Content/Animation
