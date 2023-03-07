@@ -7,29 +7,27 @@
 #include "GameFramework/Character.h"
 #include "TP_ThirdPersonCharacter.generated.h"
 
-struct FFrameStep
-{
-	float dt;
-	float timestamp;
-};
-
 UCLASS(config=Game)
 class ATP_ThirdPersonCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+	/** Queue of the meditationQueueSize last meditation values stored. End up using a Deque to read the values to compute averages */
 	TDeque<float> m_meditationValues;
-	TQueue<float> kk;
-	
-	TQueue<FFrameStep> m_unrelaxedFrames;
-	float m_unrelaxedDuration = 0.f;
 
+	/** Current timer used for the lerping of the relaxation value */
 	float m_interpTime = 0;
+	/** Interpolation speed based on the interpolation duration chosed by the user */
 	float m_interpSpeed;
+	/** Relaxation average of the last "meditationQueueSize" - 1 frames */
 	float m_currAvg = 0;
+	/** Relaxation average of the last "meditationQueueSize" frames, except the most recent one */
 	float m_prevAvg = 0;
+	/** Up velocity the Character is currently aiming for */
 	double m_targetZVelocity;
+	/** Current up velocity of the Character */
 	double m_curZVelocity;
+	/** Number of values m_prevAvg and m_currAvg bases their average on. = meditationQueueSize - 1 */
 	int m_sumSize;
 
 	/** Camera boom positioning the camera behind the character */
@@ -48,24 +46,29 @@ public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
 	float TurnRateGamepad;
-	
+
+	/** Rise velocity when relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMin="0"))
 	double riseVelocity;
+	/** Fall velocity when not relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMax="0"))
 	double fallVelocity;
+	/** Required rate of the values corresponding to the opposite state to change state (relaxed state > 50 not relaxed state < 50) */
 	UPROPERTY(EditDefaultsOnly, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"))
-	float oppositeStateThreshold; // Pourcentage de valeurs correspondant à l'état opposé nécessaires pour changer d'état (état relaxed: valeurs > 50 état non relaxed: valeurs < 50)
+	float oppositeStateThreshold;
+	/** Time/Duration it should take to reach the target velocity (rise or fall velocity) when changing state */
 	UPROPERTY(EditAnywhere, meta = (ClampMin="0"))
 	float interpDuration;
+	/** Current relaxation value, based on the current frame's interpolation between m_prevAvg and m_currAvg */
 	UPROPERTY(BlueprintReadOnly)
 	float relaxationValue;
+	/** Number of stored relaxation value, decides how much values should be used to compute the relaxation average */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="1"))
 	int meditationQueueSize;
 	UPROPERTY(BlueprintReadOnly)
 	bool bRelaxed;
 
 protected:
-
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
 
@@ -100,6 +103,9 @@ protected:
 	 * @param DeltaSeconds	DeltaTime
 	 */
 	void UpdateUpVelocity(float DeltaSeconds);
+	/**
+	 * Called when Landing to launch the player again if he is in relaxed and rising state. 
+	 */
 	UFUNCTION()
 	void Landed(const FHitResult& Hit);
 	

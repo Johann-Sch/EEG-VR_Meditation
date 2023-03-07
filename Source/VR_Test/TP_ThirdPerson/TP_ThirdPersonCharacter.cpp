@@ -1,9 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "TP_ThirdPersonCharacter.h"
-
-#include <deque>
-
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -100,7 +97,6 @@ void ATP_ThirdPersonCharacter::Tick(float DeltaSeconds)
 
 	if (m_interpTime <= 1.f)
 		relaxationValue = FMath::Lerp(m_prevAvg, m_currAvg, m_interpTime);
-		//relaxationValue = m_prevAvg * (1 - m_interpTime) - m_currAvg * m_interpTime;
 	
 	m_interpTime += DeltaSeconds;
 		
@@ -130,10 +126,6 @@ void ATP_ThirdPersonCharacter::UpdateUpVelocity(float DeltaSeconds)
 			m_curZVelocity = FMath::FInterpConstantTo(m_curZVelocity, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
 		z = m_curZVelocity;
 	}
-	
-	// UE_LOG(LogTemp, Log, TEXT("%s %f != %f?"), bRelaxed ? TEXT("rise") : TEXT("fall"), z, m_targetZVelocity);
-	// UE_LOG(LogTemp, Log, TEXT("XXXXXX %f != %f, prev-vel = %f"), m_curZVelocity, m_targetZVelocity, GetCharacterMovement()->Velocity.Z);
-	// UE_LOG(LogTemp, Log, TEXT("VVVVVV %f == %f"), m_curZVelocity, m_targetZVelocity);
 }
 
 void ATP_ThirdPersonCharacter::Landed(const FHitResult& Hit)
@@ -163,9 +155,6 @@ bool ATP_ThirdPersonCharacter::ShouldChangeState()
 
 void ATP_ThirdPersonCharacter::RegisterValue(float value)
 {
-	//TEMP
-	value = FMath::Abs(value) * 100;
-	// UE_LOG(LogTemp, Log, TEXT("registering %f"), value);
 	m_meditationValues.EmplaceFirst(value);
 	m_meditationValues.PopLast();
 	// New value registered, so reset interpTime to 0.
@@ -194,13 +183,6 @@ void ATP_ThirdPersonCharacter::ComputeAvg()
 	
 	m_prevAvg = (sum + last) / m_sumSize; 
 	m_currAvg = (sum + first) / m_sumSize;
-
-	if (m_meditationValues.Num() == 4)
-	{
-		UE_LOG(LogTemp, Log,TEXT("bRelaxed%d. prevAvg=%f, currAvg=%f --- v1=%f, v2=%f, v3=%f, v4=%f"), bRelaxed, m_prevAvg, m_currAvg, 
-			m_meditationValues[0], m_meditationValues[1], m_meditationValues[2], m_meditationValues[3]);
-	}
-
 }
 
 void ATP_ThirdPersonCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
