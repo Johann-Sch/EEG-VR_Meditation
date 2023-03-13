@@ -3,12 +3,19 @@
 
 #include "VRPawn.h"
 
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
+
 // Sets default values
 AVRPawn::AVRPawn()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneRoot"));
+	
+	CapsuleCollider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleCollider"));
+	CapsuleCollider->SetupAttachment(RootComponent);
 }
 
 // Called to bind functionality to input
@@ -29,6 +36,9 @@ void AVRPawn::BeginPlay()
 	m_interpSpeed = (riseVelocity - fallVelocity) / interpDuration;
 	m_sumSize = meditationQueueSize - 1;
 	m_targetZVelocity = fallVelocity;
+
+	CapsuleCollider->OnComponentBeginOverlap.AddDynamic(this, &AVRPawn::Landed);
+	CapsuleCollider->OnComponentEndOverlap.AddDynamic(this, &AVRPawn::BecomeAirborne);
 }
 
 // Called every frame
@@ -56,26 +66,40 @@ void AVRPawn::Tick(float DeltaTime)
 void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
 {
 	// Ignore if falling but already on ground
-	//if (!bRelaxed && !GetCharacterMovement()->IsFalling())
-	//	return;
-
-	/*auto& z = Movement
-		Velocity.Z;
+	if (!bRelaxed && bGrounded)
+		return;
 	
-	auto& z = GetCharacterMovement()->Velocity.Z;
-	// Interpolate the velocity towards the target velocity
-	if (z != m_targetZVelocity)
+	if (UFloatingPawnMovement* MovementComponent = static_cast<UFloatingPawnMovement*>(GetMovementComponent()))
 	{
-		if (m_curZVelocity != m_targetZVelocity)
-			m_curZVelocity = FMath::FInterpConstantTo(m_curZVelocity, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
-		z = m_curZVelocity;
-	}*/
+		auto& z = MovementComponent->Velocity.Z;
+		auto prevz=z;
+		// Interpolate the velocity towards the target velocity
+		if (z != m_targetZVelocity)
+		{
+			if (m_curZVelocity != m_targetZVelocity)
+				m_curZVelocity = FMath::FInterpConstantTo(m_curZVelocity, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
+			z = m_curZVelocity;
+
+			MovementComponent->UpdateComponentVelocity();
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Z before=%f; velo.Z after=%f"), prevz, MovementComponent->Velocity.Z);
+	}
 }
 
-void AVRPawn::Landed(const FHitResult& Hit)
+void AVRPawn::Landed(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
+	bGrounded = true;
+	UE_LOG(LogTemp, Warning, TEXT("landed callback!!!"))
 	//if(bRelaxed)
 	//	LaunchCharacter(FVector(0.f, 0.f, m_curZVelocity), false, false);
+}
+
+void AVRPawn::BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	bGrounded = false;
+	UE_LOG(LogTemp, Warning, TEXT("ariborne callback!!!"))
 }
 
 bool AVRPawn::ShouldChangeState()

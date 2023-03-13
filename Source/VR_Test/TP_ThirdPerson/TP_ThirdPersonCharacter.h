@@ -66,7 +66,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="1"))
 	int meditationQueueSize;
 	UPROPERTY(BlueprintReadOnly)
-	bool bRelaxed;
+	bool bRelaxed = false;
 
 protected:
 	/** Called for forwards/backward input */

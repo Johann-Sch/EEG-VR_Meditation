@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CapsuleComponent.h"
 #include "Containers/Deque.h"
 #include "GameFramework/Pawn.h"
 #include "VRPawn.generated.h"
@@ -30,30 +31,35 @@ class VR_TEST_API AVRPawn : public APawn
 	/** Number of values m_prevAvg and m_currAvg bases their average on. = meditationQueueSize - 1 */
 	int m_sumSize;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UCapsuleComponent* CapsuleCollider;
+
 public:
 	// Sets default values for this pawn's properties
 	AVRPawn();
 
 	/** Rise velocity when relaxed */
-	UPROPERTY(EditAnywhere, meta = (ClampMin="0"))
+	UPROPERTY(EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
 	double riseVelocity;
 	/** Fall velocity when not relaxed */
-	UPROPERTY(EditAnywhere, meta = (ClampMax="0"))
+	UPROPERTY(EditAnywhere, meta = (ClampMax="0"), Category = "Meditation")
 	double fallVelocity;
 	/** Required rate of the values corresponding to the opposite state to change state (relaxed state > 50 not relaxed state < 50) */
-	UPROPERTY(EditDefaultsOnly, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"))
+	UPROPERTY(EditDefaultsOnly, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
 	float oppositeStateThreshold;
 	/** Time/Duration it should take to reach the target velocity (rise or fall velocity) when changing state */
-	UPROPERTY(EditAnywhere, meta = (ClampMin="0"))
+	UPROPERTY(EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
 	float interpDuration;
 	/** Current relaxation value, based on the current frame's interpolation between m_prevAvg and m_currAvg */
 	UPROPERTY(BlueprintReadOnly)
 	float relaxationValue;
 	/** Number of stored relaxation value, decides how much values should be used to compute the relaxation average */
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="1"))
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="1"), Category = "Meditation")
 	int meditationQueueSize;
 	UPROPERTY(BlueprintReadOnly)
-	bool bRelaxed;
+	bool bRelaxed = false;
+	UPROPERTY(BlueprintReadOnly)
+	bool bGrounded = true;
 
 protected:
 	// Called when the game starts or when spawned
@@ -68,7 +74,11 @@ protected:
 	 * Called when Landing to launch the player again if he is in relaxed and rising state. 
 	 */
 	UFUNCTION()
-	void Landed(const FHitResult& Hit);
+	void Landed(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+
+	UFUNCTION()
+	void BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:	
 	// Called every frame
