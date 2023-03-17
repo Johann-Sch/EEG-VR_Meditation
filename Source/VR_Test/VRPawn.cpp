@@ -48,7 +48,7 @@ void AVRPawn::Tick(float DeltaTime)
 	
 	if (m_interpTime <= 1.f)
 		relaxationValue = FMath::Lerp(m_prevAvg, m_currAvg, m_interpTime);
-	
+	UE_LOG(LogTemp, Warning, TEXT("%f"), relaxationValue);
 	m_interpTime += DeltaTime;
 		
 	if (ShouldChangeState())
@@ -69,37 +69,29 @@ void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
 	if (!bRelaxed && bGrounded)
 		return;
 	
-	if (UFloatingPawnMovement* MovementComponent = static_cast<UFloatingPawnMovement*>(GetMovementComponent()))
+	// Interpolate the velocity towards the target velocity
+	if (velocity.Z != m_targetZVelocity)
 	{
-		auto& z = MovementComponent->Velocity.Z;
-		auto prevz=z;
-		// Interpolate the velocity towards the target velocity
-		if (z != m_targetZVelocity)
-		{
-			if (m_curZVelocity != m_targetZVelocity)
-				m_curZVelocity = FMath::FInterpConstantTo(m_curZVelocity, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
-			z = m_curZVelocity;
-
-			MovementComponent->UpdateComponentVelocity();
-		}
-		UE_LOG(LogTemp, Warning, TEXT("Z before=%f; velo.Z after=%f"), prevz, MovementComponent->Velocity.Z);
+		if (m_curZVelocity != m_targetZVelocity)
+			m_curZVelocity = FMath::FInterpConstantTo(m_curZVelocity, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
+		velocity.Z = m_curZVelocity;
 	}
+
+	AddActorWorldOffset(DeltaSeconds * velocity);
 }
 
 void AVRPawn::Landed(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	bGrounded = true;
-	UE_LOG(LogTemp, Warning, TEXT("landed callback!!!"))
-	//if(bRelaxed)
-	//	LaunchCharacter(FVector(0.f, 0.f, m_curZVelocity), false, false);
+	UE_LOG(LogTemp, Log, TEXT("landed callback!!!"))
 }
 
 void AVRPawn::BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	bGrounded = false;
-	UE_LOG(LogTemp, Warning, TEXT("ariborne callback!!!"))
+	UE_LOG(LogTemp, Log, TEXT("ariborne callback!!!"))
 }
 
 bool AVRPawn::ShouldChangeState()

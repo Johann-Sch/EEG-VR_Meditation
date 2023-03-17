@@ -15,7 +15,7 @@ class VR_TEST_API AVRPawn : public APawn
 
 	/** Queue of the meditationQueueSize last meditation values stored. End up using a Deque to read the values to compute averages */
 	TDeque<float> m_meditationValues;
-
+	
 	/** Current timer used for the lerping of the relaxation value */
 	float m_interpTime = 0;
 	/** Interpolation speed based on the interpolation duration chosed by the user */
@@ -38,6 +38,8 @@ public:
 	// Sets default values for this pawn's properties
 	AVRPawn();
 
+	UPROPERTY(BlueprintReadOnly)
+	FVector velocity;
 	/** Rise velocity when relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
 	double riseVelocity;
@@ -59,7 +61,7 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	bool bRelaxed = false;
 	UPROPERTY(BlueprintReadOnly)
-	bool bGrounded = true;
+	bool bGrounded = false;
 
 protected:
 	// Called when the game starts or when spawned
