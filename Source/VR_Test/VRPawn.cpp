@@ -14,8 +14,8 @@ AVRPawn::AVRPawn()
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneRoot"));
 	
-	CapsuleCollider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleCollider"));
-	CapsuleCollider->SetupAttachment(RootComponent);
+	SphereCollider = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollider"));
+	SphereCollider->SetupAttachment(RootComponent);
 }
 
 // Called to bind functionality to input
@@ -37,8 +37,8 @@ void AVRPawn::BeginPlay()
 	m_sumSize = meditationQueueSize - 1;
 	m_targetZVelocity = fallVelocity;
 
-	CapsuleCollider->OnComponentBeginOverlap.AddDynamic(this, &AVRPawn::Landed);
-	CapsuleCollider->OnComponentEndOverlap.AddDynamic(this, &AVRPawn::BecomeAirborne);
+	SphereCollider->OnComponentBeginOverlap.AddDynamic(this, &AVRPawn::Landed);
+	SphereCollider->OnComponentEndOverlap.AddDynamic(this, &AVRPawn::BecomeAirborne);
 }
 
 // Called every frame
@@ -70,12 +70,8 @@ void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
 		return;
 	
 	// Interpolate the velocity towards the target velocity
-	if (velocity.Z != m_targetZVelocity)
-	{
-		if (m_curZVelocity != m_targetZVelocity)
-			m_curZVelocity = FMath::FInterpConstantTo(m_curZVelocity, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
-		velocity.Z = m_curZVelocity;
-	}
+	if (velocity.Z  != m_targetZVelocity)
+		velocity.Z = FMath::FInterpConstantTo(velocity.Z, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
 
 	AddActorWorldOffset(DeltaSeconds * velocity);
 }
@@ -84,6 +80,8 @@ void AVRPawn::Landed(UPrimitiveComponent* OverlappedComponent, AActor* OtherActo
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	bGrounded = true;
+	// reset velocity adn target velocity
+	m_targetZVelocity = velocity.Z = 0.f;
 	UE_LOG(LogTemp, Log, TEXT("landed callback!!!"))
 }
 
@@ -143,4 +141,14 @@ void AVRPawn::ComputeAvg()
 	
 	m_prevAvg = (sum + last) / m_sumSize; 
 	m_currAvg = (sum + first) / m_sumSize;
+
+/*
+	float sum = 0.f;
+	
+	for (int i = 0; i < m_meditationValues.Num() - 1; ++i)
+		sum += m_meditationValues[i];
+	
+	m_prevAvg = m_currAvg;
+	m_currAvg = sum / m_sumSize;
+*/
 }

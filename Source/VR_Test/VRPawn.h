@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/CapsuleComponent.h"
+#include "Components/SphereComponent.h"
 #include "Containers/Deque.h"
 #include "GameFramework/Pawn.h"
 #include "VRPawn.generated.h"
@@ -32,7 +32,7 @@ class VR_TEST_API AVRPawn : public APawn
 	int m_sumSize;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UCapsuleComponent* CapsuleCollider;
+	class USphereComponent* SphereCollider;
 
 public:
 	// Sets default values for this pawn's properties
