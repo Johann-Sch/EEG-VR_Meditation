@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SphereComponent.h"
+#include "Components/WidgetComponent.h"
 #include "Containers/Deque.h"
 #include "GameFramework/Pawn.h"
 #include "VRPawn.generated.h"
@@ -33,6 +34,8 @@ class VR_TEST_API AVRPawn : public APawn
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class USphereComponent* SphereCollider;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UWidgetComponent* TextWidget;
 
 public:
 	// Sets default values for this pawn's properties

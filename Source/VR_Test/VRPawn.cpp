@@ -3,7 +3,7 @@
 
 #include "VRPawn.h"
 
-#include "Components/CapsuleComponent.h"
+#include "AntiAliasedTextWidgetComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 
 // Sets default values
@@ -16,6 +16,9 @@ AVRPawn::AVRPawn()
 	
 	SphereCollider = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollider"));
 	SphereCollider->SetupAttachment(RootComponent);
+
+	TextWidget = CreateDefaultSubobject<UAntiAliasedTextWidgetComponent>("TextWidget");
+	TextWidget->SetupAttachment(RootComponent);
 }
 
 // Called to bind functionality to input
