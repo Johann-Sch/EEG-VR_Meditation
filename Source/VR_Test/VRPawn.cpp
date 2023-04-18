@@ -36,7 +36,7 @@ void AVRPawn::BeginPlay()
 	for (int i = 0; i < meditationQueueSize; ++i)
 		m_meditationValues.PushFirst(0);
 
-	m_interpSpeed = (riseVelocity - fallVelocity) / interpDuration;
+	SetInterpDuration(interpDuration);
 	m_sumSize = meditationQueueSize - 1;
 	m_targetZVelocity = fallVelocity;
 
@@ -66,6 +66,11 @@ void AVRPawn::Tick(float DeltaTime)
 	UpdateUpVelocity(DeltaTime);
 }
 
+bool AVRPawn::ReachedTargetVelocity()
+{
+	return velocity.Z != m_targetZVelocity;
+}
+
 void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
 {
 	// Ignore if falling but already on ground
@@ -73,7 +78,7 @@ void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
 		return;
 	
 	// Interpolate the velocity towards the target velocity
-	if (velocity.Z  != m_targetZVelocity)
+	if (ReachedTargetVelocity())
 		velocity.Z = FMath::FInterpConstantTo(velocity.Z, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
 
 	AddActorWorldOffset(DeltaSeconds * velocity);
@@ -93,6 +98,12 @@ void AVRPawn::BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* O
 {
 	bGrounded = false;
 	UE_LOG(LogTemp, Log, TEXT("ariborne callback!!!"))
+}
+
+void AVRPawn::SetInterpDuration(float value)
+{
+	interpDuration = value;
+	m_interpSpeed = (riseVelocity - fallVelocity) / interpDuration;
 }
 
 bool AVRPawn::ShouldChangeState()

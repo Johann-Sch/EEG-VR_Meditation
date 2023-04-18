@@ -53,7 +53,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
 	float oppositeStateThreshold;
 	/** Time/Duration it should take to reach the target velocity (rise or fall velocity) when changing state */
-	UPROPERTY(EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
 	float interpDuration;
 	/** Current relaxation value, based on the current frame's interpolation between m_prevAvg and m_currAvg */
 	UPROPERTY(BlueprintReadOnly)
@@ -80,7 +80,7 @@ protected:
 	 */
 	UFUNCTION()
 	void Landed(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+	int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
 
 	UFUNCTION()
 	void BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
@@ -92,6 +92,14 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	/**
+	 * Evaluates whether the target up velocity has been reached or not.
+	 * @return True if velocity equals target velocity.
+	 */
+	UFUNCTION(BlueprintCallable)
+	bool ReachedTargetVelocity();
+	UFUNCTION(BlueprintCallable)
+	void SetInterpDuration(float value);
 	/**
 	 * Evaluates whether or not bRelaxed should change.
 	 * @return True if bRelaxed should get inverted. False otherwise.
