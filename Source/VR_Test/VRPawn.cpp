@@ -68,7 +68,7 @@ void AVRPawn::Tick(float DeltaTime)
 
 bool AVRPawn::ReachedTargetVelocity()
 {
-	return velocity.Z != m_targetZVelocity;
+	return velocity.Z == m_targetZVelocity;
 }
 
 void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
@@ -88,9 +88,8 @@ void AVRPawn::Landed(UPrimitiveComponent* OverlappedComponent, AActor* OtherActo
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	bGrounded = true;
-	// reset velocity adn target velocity
-	m_targetZVelocity = velocity.Z = 0.f;
-	UE_LOG(LogTemp, Log, TEXT("landed callback!!!"))
+	// reset velocity and target velocity
+	//m_targetZVelocity = velocity.Z = 0.f;
 }
 
 void AVRPawn::BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -141,22 +140,6 @@ void AVRPawn::AssignValue()
 
 void AVRPawn::ComputeAvg()
 {	
-	const float first = m_meditationValues[0];
-	float prev = m_meditationValues[1];
-	float sum = 0.f;
-	
-	for (int i = 2; i < m_meditationValues.Num(); ++i)
-	{
-		sum += prev;
-		prev = m_meditationValues[i];
-	}
-
-	const float last = prev;
-	
-	m_prevAvg = (sum + last) / m_sumSize; 
-	m_currAvg = (sum + first) / m_sumSize;
-
-/*
 	float sum = 0.f;
 	
 	for (int i = 0; i < m_meditationValues.Num() - 1; ++i)
@@ -164,5 +147,4 @@ void AVRPawn::ComputeAvg()
 	
 	m_prevAvg = m_currAvg;
 	m_currAvg = sum / m_sumSize;
-*/
 }
