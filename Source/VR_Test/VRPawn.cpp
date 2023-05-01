@@ -4,7 +4,7 @@
 #include "VRPawn.h"
 
 #include "AntiAliasedTextWidgetComponent.h"
-#include "GameFramework/FloatingPawnMovement.h"
+#include "GenericPlatform/GenericPlatformMath.h"
 
 // Sets default values
 AVRPawn::AVRPawn()
@@ -19,6 +19,15 @@ AVRPawn::AVRPawn()
 
 	TextWidget = CreateDefaultSubobject<UAntiAliasedTextWidgetComponent>("TextWidget");
 	TextWidget->SetupAttachment(RootComponent);
+}
+
+/** Interpolate between A and B, applying an ease out/in function.  Exp controls the degree of the curve. */
+template< class T >
+UE_NODISCARD static FORCEINLINE_DEBUGGABLE T InterpEaseInOut( const T& A, const T& B, float Alpha, float ExpIn, float ExpOut )
+{
+	return FMath::Lerp<T>(A, B, Alpha < .5f ?
+		(1.f - FGenericPlatformMath::Pow(1.f - Alpha * 2.f, ExpIn)) * 0.5f
+		: FGenericPlatformMath::Pow(Alpha * 2.f - 1.f, ExpOut) * 0.5f + 0.5f);
 }
 
 // Called to bind functionality to input
@@ -36,7 +45,6 @@ void AVRPawn::BeginPlay()
 	for (int i = 0; i < meditationQueueSize; ++i)
 		m_meditationValues.PushFirst(0);
 
-	SetInterpDuration(interpDuration);
 	m_sumSize = meditationQueueSize - 1;
 	m_targetZVelocity = fallVelocity;
 
@@ -49,27 +57,23 @@ void AVRPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	UpdateRelaxation(DeltaTime);	
+	UpdateUpVelocity(DeltaTime);
+}
+
+void AVRPawn::UpdateRelaxation(float DeltaSeconds)
+{
 	if (m_interpTime <= 1.f)
 		relaxationValue = FMath::Lerp(m_prevAvg, m_currAvg, m_interpTime);
-	UE_LOG(LogTemp, Warning, TEXT("%f"), relaxationValue);
-	m_interpTime += DeltaTime;
+	m_interpTime += DeltaSeconds;
 		
 	if (ShouldChangeState())
 	{
 		bRelaxed = !bRelaxed;
 		m_targetZVelocity = bRelaxed ? riseVelocity : fallVelocity;
-
-		//if(bRelaxed && !GetCharacterMovement()->IsFalling())
-		//	LaunchCharacter(FVector(0.f, 0.f, DeltaTime), false, false);
 	}
-	
-	UpdateUpVelocity(DeltaTime);
 }
 
-bool AVRPawn::ReachedTargetVelocity()
-{
-	return velocity.Z == m_targetZVelocity;
-}
 
 void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
 {
@@ -78,8 +82,24 @@ void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
 		return;
 	
 	// Interpolate the velocity towards the target velocity
-	if (ReachedTargetVelocity())
+	if (!ReachedTargetVelocity())
 		velocity.Z = FMath::FInterpConstantTo(velocity.Z, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
+
+	AddActorWorldOffset(DeltaSeconds * velocity);
+}
+
+void AVRPawn::IntroUpdateUpVelocity(float DeltaSeconds)
+{
+	// Ignore if falling but already on ground
+	if (!bRelaxed && bGrounded)
+		return;
+	
+	// Interpolate the velocity towards the target velocity
+	if (!ReachedTargetVelocity())
+	{
+		m_introAlpha += DeltaSeconds * m_interpSpeed;
+		velocity.Z = InterpEaseInOut(0., m_targetZVelocity, FMath::Clamp(m_introAlpha, 0.f, 1.f), .3f, .5f);
+	}
 
 	AddActorWorldOffset(DeltaSeconds * velocity);
 }
@@ -96,7 +116,19 @@ void AVRPawn::BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* O
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	bGrounded = false;
-	UE_LOG(LogTemp, Log, TEXT("ariborne callback!!!"))
+}
+
+bool AVRPawn::ReachedTargetVelocity()
+{
+	return velocity.Z == m_targetZVelocity;
+}
+
+void AVRPawn::SetIntroInterpDuration(float value)
+{
+	interpDuration = value;
+	m_interpSpeed = 1.f / interpDuration;
+
+	UE_LOG(LogRelax, Log, TEXT("INTRO value %f interpspeed  %f"), value, m_interpSpeed)
 }
 
 void AVRPawn::SetInterpDuration(float value)
@@ -147,4 +179,10 @@ void AVRPawn::ComputeAvg()
 	
 	m_prevAvg = m_currAvg;
 	m_currAvg = sum / m_sumSize;
+}
+
+void AVRPawn::IntroTick(float DeltaSeconds)
+{	
+	UpdateRelaxation(DeltaSeconds);	
+	IntroUpdateUpVelocity(DeltaSeconds);
 }

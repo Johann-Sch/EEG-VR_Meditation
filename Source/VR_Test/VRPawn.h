@@ -29,6 +29,7 @@ class VR_TEST_API AVRPawn : public APawn
 	double m_targetZVelocity;
 	/** Current up velocity of the Character */
 	double m_curZVelocity;
+	float m_introAlpha = 0.f;
 	/** Number of values m_prevAvg and m_currAvg bases their average on. = meditationQueueSize - 1 */
 	int m_sumSize;
 
@@ -71,17 +72,29 @@ protected:
 	virtual void BeginPlay() override;
 
 	/**
+	 * Calculates the new relaxation value and evaluates whether the relaxed state should change.
+	 * @param DeltaSeconds	DeltaTime
+	 */
+	void UpdateRelaxation(float DeltaSeconds);
+	/**
 	 * Calculates the new up velocity and sets the characters z-velocity with it.
 	 * @param DeltaSeconds	DeltaTime
 	 */
 	void UpdateUpVelocity(float DeltaSeconds);
 	/**
-	 * Called when Landing to launch the player again if he is in relaxed and rising state. 
+	 * Introduction that calculates the new up velocity and sets the characters z-velocity with it.
+	 * @param DeltaSeconds	DeltaTime
+	 */
+	void IntroUpdateUpVelocity(float DeltaSeconds);
+	/**
+	 * Called when Landing. 
 	 */
 	UFUNCTION()
 	void Landed(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
-
+	/**
+	 * Called when Becoming aribone. 
+	 */
 	UFUNCTION()
 	void BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
@@ -98,6 +111,16 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	bool ReachedTargetVelocity();
+	/**
+	 * Sets the duration the interpolation to reach the max rise speed during the intro should take.
+	 * @param value			duration
+	 */
+	UFUNCTION(BlueprintCallable)
+	void SetIntroInterpDuration(float value);
+	/**
+	 * Sets the duration the interpolation to reach the max rise speed should take.
+	 * @param value			duration
+	 */
 	UFUNCTION(BlueprintCallable)
 	void SetInterpDuration(float value);
 	/**
@@ -124,4 +147,9 @@ public:
 	*/
 	UFUNCTION(BlueprintCallable)
 	void ComputeAvg();
+	/**
+	* Tick called during the intro with slow rise at start and rise speed increasing.
+	*/
+	UFUNCTION(BlueprintCallable)
+	void IntroTick(float DeltaTime);
 };
