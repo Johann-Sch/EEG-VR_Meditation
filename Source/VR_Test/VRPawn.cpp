@@ -19,6 +19,11 @@ AVRPawn::AVRPawn()
 
 	TextWidget = CreateDefaultSubobject<UAntiAliasedTextWidgetComponent>("TextWidget");
 	TextWidget->SetupAttachment(RootComponent);
+
+	MotionControllerLeft = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("MotionControllerLeft"));
+	MotionControllerLeft->SetupAttachment(RootComponent);
+	MotionControllerRight = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("MotionControllerRight"));
+	MotionControllerRight->SetupAttachment(RootComponent);
 }
 
 /** Interpolate between A and B, applying an ease out/in function.  Exp controls the degree of the curve. */
@@ -50,15 +55,39 @@ void AVRPawn::BeginPlay()
 
 	SphereCollider->OnComponentBeginOverlap.AddDynamic(this, &AVRPawn::Landed);
 	SphereCollider->OnComponentEndOverlap.AddDynamic(this, &AVRPawn::BecomeAirborne);
+
+	m_prevLeftHandLocation = MotionControllerLeft->GetRelativeLocation();
+	m_prevRightHandLocation = MotionControllerRight->GetRelativeLocation();
 }
 
 // Called every frame
 void AVRPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	FVector leftForce = MotionControllerLeft->GetRelativeLocation() - m_prevLeftHandLocation;
+	FVector rightForce = MotionControllerRight->GetRelativeLocation() - m_prevRightHandLocation;
+	FVector torque = FVector::CrossProduct(leftForce, MotionControllerLeft->GetRelativeLocation())
+				+ FVector::CrossProduct(rightForce, MotionControllerRight->GetRelativeLocation());
 	
-	UpdateRelaxation(DeltaTime);	
-	UpdateUpVelocity(DeltaTime);
+	FVector acceleration = leftForce + rightForce - velocity * .1f;
+	FVector angularAcceleration = (torque - angularVelocity * .1f - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
+
+	velocity += acceleration * DeltaTime;
+	angularVelocity += angularAcceleration * DeltaTime;
+
+	// // Update the position and rotation of the character
+	// FVector NewPosition = ;
+	// FRotator NewRotation = ;
+
+	SetActorLocationAndRotation(GetActorLocation() + velocity * DeltaTime,
+		GetActorRotation() + FRotator::MakeFromEuler(angularVelocity * DeltaTime));
+
+	// Reset the applied forces and torques
+	//TotalForce = FVector::ZeroVector;
+	//TotalTorque = FVector::ZeroVector;
+	
+	//TickEvent.Broadcast(DeltaTime);
 }
 
 void AVRPawn::UpdateRelaxation(float DeltaSeconds)
@@ -181,8 +210,16 @@ void AVRPawn::ComputeAvg()
 	m_currAvg = sum / m_sumSize;
 }
 
-void AVRPawn::IntroTick(float DeltaSeconds)
-{	
-	UpdateRelaxation(DeltaSeconds);	
-	IntroUpdateUpVelocity(DeltaSeconds);
+void AVRPawn::BindIntroTick()
+{
+	TickEvent.Clear();
+	TickEvent.AddUObject(this, &AVRPawn::UpdateRelaxation);	
+	TickEvent.AddUObject(this, &AVRPawn::IntroUpdateUpVelocity);
+}
+
+void AVRPawn::BindDefaultRiseTick()
+{
+	TickEvent.Clear();
+	TickEvent.AddUObject(this, &AVRPawn::UpdateRelaxation);	
+	TickEvent.AddUObject(this, &AVRPawn::UpdateUpVelocity);
 }

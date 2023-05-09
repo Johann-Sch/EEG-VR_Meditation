@@ -5,9 +5,12 @@
 #include "CoreMinimal.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "MotionControllerComponent.h"
 #include "Containers/Deque.h"
 #include "GameFramework/Pawn.h"
 #include "VRPawn.generated.h"
+
+DECLARE_EVENT_OneParam(AVRPawn, TickEvent, float)
 
 UCLASS()
 class VR_TEST_API AVRPawn : public APawn
@@ -16,7 +19,10 @@ class VR_TEST_API AVRPawn : public APawn
 
 	/** Queue of the meditationQueueSize last meditation values stored. End up using a Deque to read the values to compute averages */
 	TDeque<float> m_meditationValues;
-	
+
+	FVector m_prevLeftHandLocation;
+	FVector m_prevRightHandLocation;
+	float m_momentOfInertia = 4.f;
 	/** Current timer used for the lerping of the relaxation value */
 	float m_interpTime = 0;
 	/** Interpolation speed based on the interpolation duration chosed by the user */
@@ -37,13 +43,20 @@ class VR_TEST_API AVRPawn : public APawn
 	class USphereComponent* SphereCollider;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* TextWidget;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UMotionControllerComponent* MotionControllerRight;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UMotionControllerComponent* MotionControllerLeft;
 
+	TickEvent TickEvent;
 public:
 	// Sets default values for this pawn's properties
 	AVRPawn();
 
 	UPROPERTY(BlueprintReadOnly)
 	FVector velocity;
+	UPROPERTY(BlueprintReadWrite)
+	FVector angularVelocity;
 	/** Rise velocity when relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
 	double riseVelocity;
@@ -148,8 +161,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ComputeAvg();
 	/**
-	* Tick called during the intro with slow rise at start and rise speed increasing.
+	* Bind intro tick implementation to tick function (slow rise at start and rise speed increasing).
 	*/
 	UFUNCTION(BlueprintCallable)
-	void IntroTick(float DeltaTime);
+	void BindIntroTick();
+	/**
+	* Bind default rise tick implementation to tick function (default rise speed).
+	*/
+	UFUNCTION(BlueprintCallable)
+	void BindDefaultRiseTick();
 };
