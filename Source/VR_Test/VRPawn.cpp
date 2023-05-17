@@ -65,23 +65,34 @@ void AVRPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector leftForce = MotionControllerLeft->GetRelativeLocation() - m_prevLeftHandLocation;
-	FVector rightForce = MotionControllerRight->GetRelativeLocation() - m_prevRightHandLocation;
+	FVector left = MotionControllerLeft->GetRelativeLocation();
+	FVector right = MotionControllerRight->GetRelativeLocation();
+	
+	FVector leftForce = left - m_prevLeftHandLocation;
+	FVector rightForce = right - m_prevRightHandLocation;
+
+	m_prevLeftHandLocation = left;
+	m_prevRightHandLocation = right;
+
+	if (leftForce.SquaredLength() < 5.f)
+		leftForce *= FMath::Pow(leftForce.Length() / 5.f, 4);
+	if (rightForce.SquaredLength() < 5.f)
+		rightForce *= FMath::Pow(rightForce.Length() / 5.f, 4);
+	
 	FVector torque = FVector::CrossProduct(leftForce, MotionControllerLeft->GetRelativeLocation())
 				+ FVector::CrossProduct(rightForce, MotionControllerRight->GetRelativeLocation());
 	
-	FVector acceleration = leftForce + rightForce - velocity * .1f;
-	FVector angularAcceleration = (torque - angularVelocity * .1f - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
+	FVector acceleration = - (leftForce + rightForce);
+	FVector angularAcceleration = (torque - angularVelocity * drag - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
 
-	velocity += acceleration * DeltaTime;
+	velocity += acceleration - velocity * drag;
 	angularVelocity += angularAcceleration * DeltaTime;
 
 	// // Update the position and rotation of the character
-	// FVector NewPosition = ;
-	// FRotator NewRotation = ;
-
-	SetActorLocationAndRotation(GetActorLocation() + velocity * DeltaTime,
-		GetActorRotation() + FRotator::MakeFromEuler(angularVelocity * DeltaTime));
+	FVector NewPosition = GetActorLocation() + velocity * DeltaTime;
+	FQuat NewRotation = GetActorRotation().Quaternion(); // * FQuat::MakeFromEuler(angularVelocity * DeltaTime);
+	
+	SetActorLocationAndRotation(NewPosition, NewRotation);
 
 	// Reset the applied forces and torques
 	//TotalForce = FVector::ZeroVector;
@@ -112,9 +123,9 @@ void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
 	
 	// Interpolate the velocity towards the target velocity
 	if (!ReachedTargetVelocity())
-		velocity.Z = FMath::FInterpConstantTo(velocity.Z, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
+		z = FMath::FInterpConstantTo(z, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
 
-	AddActorWorldOffset(DeltaSeconds * velocity);
+	AddActorWorldOffset(DeltaSeconds * FVector(0.f, 0.f, z));
 }
 
 void AVRPawn::IntroUpdateUpVelocity(float DeltaSeconds)
@@ -127,10 +138,10 @@ void AVRPawn::IntroUpdateUpVelocity(float DeltaSeconds)
 	if (!ReachedTargetVelocity())
 	{
 		m_introAlpha += DeltaSeconds * m_interpSpeed;
-		velocity.Z = InterpEaseInOut(0., m_targetZVelocity, FMath::Clamp(m_introAlpha, 0.f, 1.f), .3f, .5f);
+		z = InterpEaseInOut(0., m_targetZVelocity, FMath::Clamp(m_introAlpha, 0.f, 1.f), .3f, .5f);
 	}
 
-	AddActorWorldOffset(DeltaSeconds * velocity);
+	AddActorWorldOffset(DeltaSeconds * FVector(0.f, 0.f, z));
 }
 
 void AVRPawn::Landed(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -149,7 +160,7 @@ void AVRPawn::BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* O
 
 bool AVRPawn::ReachedTargetVelocity()
 {
-	return velocity.Z == m_targetZVelocity;
+	return z == m_targetZVelocity;
 }
 
 void AVRPawn::SetIntroInterpDuration(float value)
@@ -212,14 +223,14 @@ void AVRPawn::ComputeAvg()
 
 void AVRPawn::BindIntroTick()
 {
-	TickEvent.Clear();
-	TickEvent.AddUObject(this, &AVRPawn::UpdateRelaxation);	
-	TickEvent.AddUObject(this, &AVRPawn::IntroUpdateUpVelocity);
+	tickEvent.Clear();
+	tickEvent.AddUObject(this, &AVRPawn::UpdateRelaxation);	
+	tickEvent.AddUObject(this, &AVRPawn::IntroUpdateUpVelocity);
 }
 
 void AVRPawn::BindDefaultRiseTick()
 {
-	TickEvent.Clear();
-	TickEvent.AddUObject(this, &AVRPawn::UpdateRelaxation);	
-	TickEvent.AddUObject(this, &AVRPawn::UpdateUpVelocity);
+	tickEvent.Clear();
+	tickEvent.AddUObject(this, &AVRPawn::UpdateRelaxation);	
+	tickEvent.AddUObject(this, &AVRPawn::UpdateUpVelocity);
 }

@@ -48,7 +48,7 @@ class VR_TEST_API AVRPawn : public APawn
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UMotionControllerComponent* MotionControllerLeft;
 
-	TickEvent TickEvent;
+	TickEvent tickEvent;
 public:
 	// Sets default values for this pawn's properties
 	AVRPawn();
@@ -69,9 +69,14 @@ public:
 	/** Time/Duration it should take to reach the target velocity (rise or fall velocity) when changing state */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
 	float interpDuration;
+	/** Drag coefficient applied to movement produced by controllers / hand movement in air */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
+	float drag = .01f;
 	/** Current relaxation value, based on the current frame's interpolation between m_prevAvg and m_currAvg */
 	UPROPERTY(BlueprintReadOnly)
 	float relaxationValue;
+	UPROPERTY(BlueprintReadOnly)
+	float z;
 	/** Number of stored relaxation value, decides how much values should be used to compute the relaxation average */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="1"), Category = "Meditation")
 	int meditationQueueSize;
