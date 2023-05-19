@@ -4,6 +4,10 @@
 #include "VRPawn.h"
 
 #include "AntiAliasedTextWidgetComponent.h"
+#include "Components/SphereComponent.h"
+#include "Components/WidgetComponent.h"
+#include "MotionControllerComponent.h"
+#include "Camera/CameraComponent.h"
 #include "GenericPlatform/GenericPlatformMath.h"
 
 // Sets default values
@@ -17,13 +21,18 @@ AVRPawn::AVRPawn()
 	SphereCollider = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollider"));
 	SphereCollider->SetupAttachment(RootComponent);
 
-	TextWidget = CreateDefaultSubobject<UAntiAliasedTextWidgetComponent>("TextWidget");
+	TextWidget = CreateDefaultSubobject<UAntiAliasedTextWidgetComponent>(TEXT("TextWidget"));
 	TextWidget->SetupAttachment(RootComponent);
 
 	MotionControllerLeft = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("MotionControllerLeft"));
 	MotionControllerLeft->SetupAttachment(RootComponent);
 	MotionControllerRight = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("MotionControllerRight"));
 	MotionControllerRight->SetupAttachment(RootComponent);
+
+	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	Camera->SetupAttachment(RootComponent);
+	HMD = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HMD"));
+	HMD->SetupAttachment(Camera);
 }
 
 /** Interpolate between A and B, applying an ease out/in function.  Exp controls the degree of the curve. */
@@ -79,18 +88,22 @@ void AVRPawn::Tick(float DeltaTime)
 	if (rightForce.SquaredLength() < 5.f)
 		rightForce *= FMath::Pow(rightForce.Length() / 5.f, 4);
 	
-	FVector torque = FVector::CrossProduct(leftForce, MotionControllerLeft->GetRelativeLocation())
-				+ FVector::CrossProduct(rightForce, MotionControllerRight->GetRelativeLocation());
+	FVector centerOfMass = Camera->GetRelativeLocation();	centerOfMass.Z *= centerOfMassHeightRateRelativeToHMD;
+	FVector leftRelPos = MotionControllerLeft->GetRelativeLocation() - centerOfMass;
+	FVector rightRelPos = MotionControllerRight->GetRelativeLocation() - centerOfMass;
 	
-	FVector acceleration = - (leftForce + rightForce);
-	FVector angularAcceleration = (torque - angularVelocity * drag - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
+	FVector leftTorque = FVector::CrossProduct(leftForce, leftRelPos);
+	FVector rightTorque = FVector::CrossProduct(rightForce, rightRelPos);
+
+	FVector acceleration = -(leftForce + rightForce);
+	FVector angularAcceleration = -(leftTorque + rightTorque); //(torque - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
 
 	velocity += acceleration - velocity * drag;
-	angularVelocity += angularAcceleration * DeltaTime;
+	angularVelocity += angularAcceleration * DeltaTime - angularVelocity * drag;
 
 	// // Update the position and rotation of the character
 	FVector NewPosition = GetActorLocation() + velocity * DeltaTime;
-	FQuat NewRotation = GetActorRotation().Quaternion(); // * FQuat::MakeFromEuler(angularVelocity * DeltaTime);
+	FQuat NewRotation = GetActorRotation().Quaternion() * FQuat::MakeFromEuler(angularVelocity * DeltaTime);
 	
 	SetActorLocationAndRotation(NewPosition, NewRotation);
 

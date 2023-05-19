@@ -3,9 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/SphereComponent.h"
-#include "Components/WidgetComponent.h"
-#include "MotionControllerComponent.h"
 #include "Containers/Deque.h"
 #include "GameFramework/Pawn.h"
 #include "VRPawn.generated.h"
@@ -47,6 +44,10 @@ class VR_TEST_API AVRPawn : public APawn
 	class UMotionControllerComponent* MotionControllerRight;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UMotionControllerComponent* MotionControllerLeft;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* HMD;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UCameraComponent* Camera;
 
 	TickEvent tickEvent;
 public:
@@ -72,6 +73,9 @@ public:
 	/** Drag coefficient applied to movement produced by controllers / hand movement in air */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
 	float drag = .01f;
+	/** At what percentage of the HMD height the center of mass will considered to be? */
+	UPROPERTY(EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
+	float centerOfMassHeightRateRelativeToHMD = 0.8f;
 	/** Current relaxation value, based on the current frame's interpolation between m_prevAvg and m_currAvg */
 	UPROPERTY(BlueprintReadOnly)
 	float relaxationValue;
