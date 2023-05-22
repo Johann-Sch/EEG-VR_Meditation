@@ -96,12 +96,15 @@ void AVRPawn::Tick(float DeltaTime)
 	FVector rightTorque = FVector::CrossProduct(rightForce, rightRelPos);
 
 	FVector acceleration = -(leftForce + rightForce);
-	FVector angularAcceleration = -(leftTorque + rightTorque); //(torque - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
-
+	acceleration = GetActorTransform().TransformVector(acceleration);
+	FVector angularAcceleration = leftTorque + rightTorque; //(torque - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
+	// constraint rotation only on z for now
+	angularAcceleration = FVector(0.f, 0.f, angularAcceleration.Z);
+	
 	velocity += acceleration - velocity * drag;
 	angularVelocity += angularAcceleration * DeltaTime - angularVelocity * drag;
 
-	// // Update the position and rotation of the character
+	// Update the position and rotation of the character
 	FVector NewPosition = GetActorLocation() + velocity * DeltaTime;
 	FQuat NewRotation = GetActorRotation().Quaternion() * FQuat::MakeFromEuler(angularVelocity * DeltaTime);
 	
