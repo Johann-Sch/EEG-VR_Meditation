@@ -20,7 +20,18 @@ class VR_TEST_API AVRPawn : public APawn
 	FVector m_prevLeftHandLocation;
 	FVector m_prevRightHandLocation;
 	float m_momentOfInertia = 4.f;
-	/** Current timer used for the lerping of the relaxation value */
+
+	/** Min drag coefficient produced by hand movement (when hands parallel to hand direction) */
+	float cdMin = 0.1f;
+	/** Max drag coefficient produced by hand movement (when hands perpendiculqr to hand direction) */
+	float cdMax = 1.2f;
+	/** ρ - rhô representing water density */
+	float p = 1.f;
+	/** */
+	float A = 1.f;
+	/** mass of the character */
+	float mass = 65.0f;
+	/** Current timer used for lerping the r- Rhô elaxation value */
 	float m_interpTime = 0;
 	/** Interpolation speed based on the interpolation duration chosed by the user */
 	float m_interpSpeed;
