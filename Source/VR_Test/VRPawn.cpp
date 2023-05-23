@@ -56,10 +56,10 @@ void AVRPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	for (int i = 0; i < meditationQueueSize; ++i)
+	for (int i = 0; i < relaxationQueueSize; ++i)
 		m_meditationValues.PushFirst(0);
 
-	m_sumSize = meditationQueueSize - 1;
+	m_sumSize = relaxationQueueSize - 1;
 	m_targetZVelocity = fallVelocity;
 
 	SphereCollider->OnComponentBeginOverlap.AddDynamic(this, &AVRPawn::Landed);
@@ -76,17 +76,30 @@ void AVRPawn::Tick(float DeltaTime)
 
 	FVector left = MotionControllerLeft->GetRelativeLocation();
 	FVector right = MotionControllerRight->GetRelativeLocation();
-	
-	FVector leftForce = left - m_prevLeftHandLocation;
-	FVector rightForce = right - m_prevRightHandLocation;
+
+	float m_s = 100.f * DeltaTime;
+	FVector leftForce = (left - m_prevLeftHandLocation) / m_s;	// convert in m/s
+	FVector rightForce = (right - m_prevRightHandLocation) / m_s;
 
 	m_prevLeftHandLocation = left;
 	m_prevRightHandLocation = right;
+	
 
-	if (leftForce.SquaredLength() < 5.f)
-		leftForce *= FMath::Pow(leftForce.Length() / 5.f, 4);
-	if (rightForce.SquaredLength() < 5.f)
-		rightForce *= FMath::Pow(rightForce.Length() / 5.f, 4);
+	float length = FMath::Clamp(leftForce.Length(), 0.f, m_maxHandSpeedThreshold);
+	// computing drag created by water/air resistance
+	// drag coefficient
+	// left - lcd
+	float lcd = length / m_maxHandSpeedThreshold;
+	lcd = FMath::Lerp(cdMin, cdMax, lcd);	// drag coef and surface area proportional to speed for now
+	float A = FMath::Lerp(AMin, AMax, lcd);	// TODO will be made proportional to hand/controller orientation
+	leftForce = leftForce.GetSafeNormal() * (.5f * p * lcd * A * FMath::Square(length));
+
+	length = FMath::Clamp(rightForce.Length(), 0.f, m_maxHandSpeedThreshold);
+	// right - rcd
+	float rcd = length / m_maxHandSpeedThreshold;
+	rcd = FMath::Lerp(cdMin, cdMax, rcd);
+	A = FMath::Lerp(AMin, AMax, rcd);
+	rightForce = rightForce.GetSafeNormal() * (.5f * p * rcd * A * FMath::Square(length));
 	
 	FVector centerOfMass = Camera->GetRelativeLocation();	centerOfMass.Z *= centerOfMassHeightRateRelativeToHMD;
 	FVector leftRelPos = MotionControllerLeft->GetRelativeLocation() - centerOfMass;
@@ -95,14 +108,16 @@ void AVRPawn::Tick(float DeltaTime)
 	FVector leftTorque = FVector::CrossProduct(leftForce, leftRelPos);
 	FVector rightTorque = FVector::CrossProduct(rightForce, rightRelPos);
 
-	FVector acceleration = -(leftForce + rightForce);
+	FVector acceleration = -(leftForce + rightForce) / mass;
 	acceleration = GetActorTransform().TransformVector(acceleration);
-	FVector angularAcceleration = leftTorque + rightTorque; //(torque - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
+
+	FVector angularAcceleration = (leftTorque + rightTorque) / m_momentOfInertia; //(torque - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
 	// constraint rotation only on z for now
 	angularAcceleration = FVector(0.f, 0.f, angularAcceleration.Z);
+	angularAcceleration = GetActorTransform().TransformVector({0.f, 0.f, angularAcceleration.Z});
 	
-	velocity += acceleration - velocity * drag;
-	angularVelocity += angularAcceleration * DeltaTime - angularVelocity * drag;
+	velocity += acceleration * 5.f - velocity * drag;
+	angularVelocity += angularAcceleration * FMath::Square(DeltaTime) * 20.f - angularVelocity * drag;
 
 	// Update the position and rotation of the character
 	FVector NewPosition = GetActorLocation() + velocity * DeltaTime;
@@ -119,9 +134,10 @@ void AVRPawn::Tick(float DeltaTime)
 
 void AVRPawn::UpdateRelaxation(float DeltaSeconds)
 {
-	if (m_interpTime <= 1.f)
-		relaxationValue = FMath::Lerp(m_prevAvg, m_currAvg, m_interpTime);
-	m_interpTime += DeltaSeconds;
+	if (m_relaxationInterpTime <= 1.f)
+		relaxationValue = FMath::Lerp(m_prevAvg, m_currAvg, m_relaxationInterpTime);
+	//UE_LOG(LogTemp, Warning, TEXT("%f"), relaxationValue);
+	m_relaxationInterpTime += DeltaSeconds;
 		
 	if (ShouldChangeState())
 	{
@@ -153,8 +169,8 @@ void AVRPawn::IntroUpdateUpVelocity(float DeltaSeconds)
 	// Interpolate the velocity towards the target velocity
 	if (!ReachedTargetVelocity())
 	{
-		m_introAlpha += DeltaSeconds * m_interpSpeed;
-		z = InterpEaseInOut(0., m_targetZVelocity, FMath::Clamp(m_introAlpha, 0.f, 1.f), .3f, .5f);
+		m_introZInterpValue += DeltaSeconds * m_interpSpeed;
+		z = InterpEaseInOut(0.f, m_targetZVelocity, FMath::Clamp(m_introZInterpValue, 0.f, 1.f), .3f, .5f);
 	}
 
 	AddActorWorldOffset(DeltaSeconds * FVector(0.f, 0.f, z));
@@ -199,11 +215,11 @@ bool AVRPawn::ShouldChangeState()
 	{
 		int unrelaxedValueCount = 0;
 	
-		for (int i = 0; i < meditationQueueSize; ++i)
+		for (int i = 0; i < relaxationQueueSize; ++i)
 			if (m_meditationValues[i] < 50.f)
 				unrelaxedValueCount++;
 
-		const float unrelaxedRate = static_cast<float>(unrelaxedValueCount) / static_cast<float>(meditationQueueSize);
+		const float unrelaxedRate = static_cast<float>(unrelaxedValueCount) / static_cast<float>(relaxationQueueSize);
 
 		return bRelaxed && unrelaxedRate >= oppositeStateThreshold
 			|| !bRelaxed && 1 - unrelaxedRate >= oppositeStateThreshold;
@@ -217,7 +233,7 @@ void AVRPawn::RegisterValue(float value)
 	m_meditationValues.EmplaceFirst(value);
 	m_meditationValues.PopLast();
 	// New value registered, so reset interpTime to 0.
-	m_interpTime = 0.f;
+	m_relaxationInterpTime = 0.f;
 }
 
 void AVRPawn::AssignValue()
