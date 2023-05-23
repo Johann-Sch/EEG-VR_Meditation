@@ -56,10 +56,10 @@ void AVRPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	for (int i = 0; i < meditationQueueSize; ++i)
+	for (int i = 0; i < relaxationQueueSize; ++i)
 		m_meditationValues.PushFirst(0);
 
-	m_sumSize = meditationQueueSize - 1;
+	m_sumSize = relaxationQueueSize - 1;
 	m_targetZVelocity = fallVelocity;
 
 	SphereCollider->OnComponentBeginOverlap.AddDynamic(this, &AVRPawn::Landed);
@@ -100,6 +100,7 @@ void AVRPawn::Tick(float DeltaTime)
 	FVector angularAcceleration = leftTorque + rightTorque; //(torque - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
 	// constraint rotation only on z for now
 	angularAcceleration = FVector(0.f, 0.f, angularAcceleration.Z);
+	angularAcceleration = GetActorTransform().TransformVector({0.f, 0.f, angularAcceleration.Z});
 	
 	velocity += acceleration - velocity * drag;
 	angularVelocity += angularAcceleration * DeltaTime - angularVelocity * drag;
@@ -119,9 +120,9 @@ void AVRPawn::Tick(float DeltaTime)
 
 void AVRPawn::UpdateRelaxation(float DeltaSeconds)
 {
-	if (m_interpTime <= 1.f)
-		relaxationValue = FMath::Lerp(m_prevAvg, m_currAvg, m_interpTime);
-	m_interpTime += DeltaSeconds;
+	if (m_relaxationInterpTime <= 1.f)
+		relaxationValue = FMath::Lerp(m_prevAvg, m_currAvg, m_relaxationInterpTime);
+	m_relaxationInterpTime += DeltaSeconds;
 		
 	if (ShouldChangeState())
 	{
@@ -153,8 +154,8 @@ void AVRPawn::IntroUpdateUpVelocity(float DeltaSeconds)
 	// Interpolate the velocity towards the target velocity
 	if (!ReachedTargetVelocity())
 	{
-		m_introAlpha += DeltaSeconds * m_interpSpeed;
-		z = InterpEaseInOut(0., m_targetZVelocity, FMath::Clamp(m_introAlpha, 0.f, 1.f), .3f, .5f);
+		m_introZInterpValue += DeltaSeconds * m_interpSpeed;
+		z = InterpEaseInOut(0.f, m_targetZVelocity, FMath::Clamp(m_introZInterpValue, 0.f, 1.f), .3f, .5f);
 	}
 
 	AddActorWorldOffset(DeltaSeconds * FVector(0.f, 0.f, z));
@@ -199,11 +200,11 @@ bool AVRPawn::ShouldChangeState()
 	{
 		int unrelaxedValueCount = 0;
 	
-		for (int i = 0; i < meditationQueueSize; ++i)
+		for (int i = 0; i < relaxationQueueSize; ++i)
 			if (m_meditationValues[i] < 50.f)
 				unrelaxedValueCount++;
 
-		const float unrelaxedRate = static_cast<float>(unrelaxedValueCount) / static_cast<float>(meditationQueueSize);
+		const float unrelaxedRate = static_cast<float>(unrelaxedValueCount) / static_cast<float>(relaxationQueueSize);
 
 		return bRelaxed && unrelaxedRate >= oppositeStateThreshold
 			|| !bRelaxed && 1 - unrelaxedRate >= oppositeStateThreshold;
@@ -217,7 +218,7 @@ void AVRPawn::RegisterValue(float value)
 	m_meditationValues.EmplaceFirst(value);
 	m_meditationValues.PopLast();
 	// New value registered, so reset interpTime to 0.
-	m_interpTime = 0.f;
+	m_relaxationInterpTime = 0.f;
 }
 
 void AVRPawn::AssignValue()

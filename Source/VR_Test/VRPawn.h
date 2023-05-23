@@ -20,8 +20,8 @@ class VR_TEST_API AVRPawn : public APawn
 	FVector m_prevLeftHandLocation;
 	FVector m_prevRightHandLocation;
 	float m_momentOfInertia = 4.f;
-	/** Current timer used for the lerping of the relaxation value */
-	float m_interpTime = 0;
+	/** Current timer used for lerping the relaxation value */
+	float m_relaxationInterpTime = 0;
 	/** Interpolation speed based on the interpolation duration chosed by the user */
 	float m_interpSpeed;
 	/** Relaxation average of the last "meditationQueueSize" - 1 frames */
@@ -29,10 +29,11 @@ class VR_TEST_API AVRPawn : public APawn
 	/** Relaxation average of the last "meditationQueueSize" frames, except the most recent one */
 	float m_prevAvg = 0;
 	/** Up velocity the Character is currently aiming for */
-	double m_targetZVelocity;
+	float m_targetZVelocity;
 	/** Current up velocity of the Character */
-	double m_curZVelocity;
-	float m_introAlpha = 0.f;
+	float m_curZVelocity;
+	/** Current lerping value used to reach target Z velocity during intro */
+	float m_introZInterpValue = 0.f;
 	/** Number of values m_prevAvg and m_currAvg bases their average on. = meditationQueueSize - 1 */
 	int m_sumSize;
 
@@ -60,17 +61,17 @@ public:
 	FVector angularVelocity;
 	/** Rise velocity when relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
-	double riseVelocity;
+	float riseVelocity;
 	/** Fall velocity when not relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMax="0"), Category = "Meditation")
-	double fallVelocity;
+	float fallVelocity;
 	/** Required rate of the values corresponding to the opposite state to change state (relaxed state > 50 not relaxed state < 50) */
 	UPROPERTY(EditDefaultsOnly, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
 	float oppositeStateThreshold;
 	/** Time/Duration it should take to reach the target velocity (rise or fall velocity) when changing state */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
 	float interpDuration;
-	/** Drag coefficient applied to movement produced by controllers / hand movement in air */
+	/** Drag applied to movement produced by controllers / hand movement in air */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
 	float drag = .01f;
 	/** At what percentage of the HMD height the center of mass will considered to be? */
@@ -81,9 +82,9 @@ public:
 	float relaxationValue;
 	UPROPERTY(BlueprintReadOnly)
 	float z;
-	/** Number of stored relaxation value, decides how much values should be used to compute the relaxation average */
+	/** Number of stored relaxation values, decides how many previous values should be used to compute the relaxation average */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="1"), Category = "Meditation")
-	int meditationQueueSize;
+	int relaxationQueueSize;
 	UPROPERTY(BlueprintReadOnly)
 	bool bRelaxed = false;
 	UPROPERTY(BlueprintReadOnly)
