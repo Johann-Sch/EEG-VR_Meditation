@@ -21,7 +21,7 @@ class VR_TEST_API AVRPawn : public APawn
 	FVector m_prevRightHandLocation;
 	float m_momentOfInertia = 4.f;
 
-	float m_maxHandSpeedThreshold = 5.f;
+	float m_maxHandSpeedThreshold = 3.f;
 	/** Min drag coefficient produced by hand movement (when hands parallel to hand direction) */
 	float cdMin = 0.1f;
 	/** Max drag coefficient produced by hand movement (when hands perpendiculqr to hand direction) */
