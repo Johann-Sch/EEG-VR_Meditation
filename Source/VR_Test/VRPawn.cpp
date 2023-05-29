@@ -14,9 +14,6 @@
 #define CHEAT_FACTOR 20.f
 #define CHEAT_ANGULAR_FACTOR (CHEAT_FACTOR * 2.f)
 
-DECLARE_LOG_CATEGORY_EXTERN(LogRelax, Log, All);
-DEFINE_LOG_CATEGORY(LogRelax);
-
 // Sets default values
 AVRPawn::AVRPawn()
 {
@@ -74,9 +71,7 @@ void AVRPawn::BeginPlay()
 
 	m_prevLeftHandLocation = MotionControllerLeft->GetRelativeLocation();
 	m_prevRightHandLocation = MotionControllerRight->GetRelativeLocation();
-	// temp
-	m_targetZVelocity = riseVelocity;
-	bRelaxed = true;
+
 }
 
 // Called every frame
@@ -142,7 +137,6 @@ void AVRPawn::IntroUpdateUpVelocity(float DeltaTime)
 	{
 		m_introZInterpValue += DeltaTime * m_interpSpeed;
 		z = InterpEaseInOut(0.f, m_targetZVelocity, FMath::Clamp(m_introZInterpValue, 0.f, 1.f), .3f, .5f);
-		UE_LOG(LogRelax, Log, TEXT("interpspeed %f, alpha=%f vel %f ?= target %f"), m_interpSpeed, m_introZInterpValue, z, m_targetZVelocity)
 	}
 
 	AddActorWorldOffset(DeltaTime * FVector(0.f, 0.f, z));
@@ -206,16 +200,12 @@ void AVRPawn::SetIntroInterpDuration(float Value)
 {
 	interpDuration = Value;
 	m_interpSpeed = 1.f / interpDuration;
-
-	UE_LOG(LogRelax, Log, TEXT("INTRO value %f interpspeed  %f"), Value, m_interpSpeed)
 }
 
 void AVRPawn::SetInterpDuration(float Value)
 {
 	interpDuration = Value;
 	m_interpSpeed = (riseVelocity - fallVelocity) / interpDuration;
-
-	UE_LOG(LogRelax, Log, TEXT("FINAL interpspeed  %f"), m_interpSpeed)
 }
 
 bool AVRPawn::ShouldChangeState()
