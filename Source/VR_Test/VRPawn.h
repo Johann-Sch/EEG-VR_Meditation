@@ -20,8 +20,22 @@ class VR_TEST_API AVRPawn : public APawn
 	FVector m_prevLeftHandLocation;
 	FVector m_prevRightHandLocation;
 	float m_momentOfInertia = 4.f;
-	/** Current timer used for the lerping of the relaxation value */
-	float m_interpTime = 0;
+
+	float m_maxHandSpeedThreshold = 2.f;
+	/** Min drag coefficient produced by hand movement (when hands parallel to hand direction) */
+	float cdMin = 0.1f;
+	/** Max drag coefficient produced by hand movement (when hands perpendiculqr to hand direction) */
+	float cdMax = 1.2f;
+	/** ρ - rhô representing water density */
+	float p = 1000.f;
+	/** Min hand surface area in m²*/
+	float AMin = 0.0015f;
+	/** Max hand surface area in m²*/
+	float AMax = 0.0145f;
+	/** mass of the character */
+	float mass = 65.0f;
+	/** Current timer used for lerping the relaxation value */
+	float m_relaxationInterpTime = 0;
 	/** Interpolation speed based on the interpolation duration chosed by the user */
 	float m_interpSpeed;
 	/** Relaxation average of the last "meditationQueueSize" - 1 frames */
@@ -29,12 +43,14 @@ class VR_TEST_API AVRPawn : public APawn
 	/** Relaxation average of the last "meditationQueueSize" frames, except the most recent one */
 	float m_prevAvg = 0;
 	/** Up velocity the Character is currently aiming for */
-	double m_targetZVelocity;
+	float m_targetZVelocity;
 	/** Current up velocity of the Character */
-	double m_curZVelocity;
-	float m_introAlpha = 0.f;
+	float m_curZVelocity;
+	/** Current lerping value used to reach target Z velocity during intro */
+	float m_introZInterpValue = 0.f;
 	/** Number of values m_prevAvg and m_currAvg bases their average on. = meditationQueueSize - 1 */
 	int m_sumSize;
+	
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class USphereComponent* SphereCollider;
@@ -60,19 +76,19 @@ public:
 	FVector angularVelocity;
 	/** Rise velocity when relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
-	double riseVelocity;
+	float riseVelocity;
 	/** Fall velocity when not relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMax="0"), Category = "Meditation")
-	double fallVelocity;
+	float fallVelocity;
 	/** Required rate of the values corresponding to the opposite state to change state (relaxed state > 50 not relaxed state < 50) */
 	UPROPERTY(EditDefaultsOnly, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
 	float oppositeStateThreshold;
 	/** Time/Duration it should take to reach the target velocity (rise or fall velocity) when changing state */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
 	float interpDuration;
-	/** Drag coefficient applied to movement produced by controllers / hand movement in air */
+	/** Drag applied to movement produced by controllers / hand movement in air */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
-	float drag = .01f;
+	float drag = .5f;
 	/** At what percentage of the HMD height the center of mass will considered to be? */
 	UPROPERTY(EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
 	float centerOfMassHeightRateRelativeToHMD = 0.8f;
@@ -81,18 +97,27 @@ public:
 	float relaxationValue;
 	UPROPERTY(BlueprintReadOnly)
 	float z;
-	/** Number of stored relaxation value, decides how much values should be used to compute the relaxation average */
+	/** Number of stored relaxation values, decides how many previous values should be used to compute the relaxation average */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="1"), Category = "Meditation")
-	int meditationQueueSize;
+	int relaxationQueueSize;
 	UPROPERTY(BlueprintReadOnly)
 	bool bRelaxed = false;
 	UPROPERTY(BlueprintReadOnly)
 	bool bGrounded = false;
 
+	bool temp = true;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	/**
+	 * Calculates Drag force created from the hand movement, using the Drag Equation.
+	 * @param Force		Force
+	 * @param DeltaTime	DeltaTime
+	 * @return			Drag force
+	 */
+	FVector CalculateDragForce(FVector Force, float DeltaTime) const;
 	/**
 	 * Calculates the new relaxation value and evaluates whether the relaxed state should change.
 	 * @param DeltaSeconds	DeltaTime
@@ -120,7 +145,7 @@ protected:
 	UFUNCTION()
 	void BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -135,16 +160,16 @@ public:
 	bool ReachedTargetVelocity();
 	/**
 	 * Sets the duration the interpolation to reach the max rise speed during the intro should take.
-	 * @param value			duration
+	 * @param Value			duration
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SetIntroInterpDuration(float value);
+	void SetIntroInterpDuration(float Value);
 	/**
 	 * Sets the duration the interpolation to reach the max rise speed should take.
-	 * @param value			duration
+	 * @param Value			duration
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SetInterpDuration(float value);
+	void SetInterpDuration(float Value);
 	/**
 	 * Evaluates whether or not bRelaxed should change.
 	 * @return True if bRelaxed should get inverted. False otherwise.
@@ -153,10 +178,10 @@ public:
 	bool ShouldChangeState();
 	/**
 	 * Registers a new value into m_meditationValues, and pops/deletes the last one.
-	 * @param value			New value to be registered
+	 * @param Value			New value to be registered
 	 */
 	UFUNCTION(BlueprintCallable)
-	void RegisterValue(float value);
+	void RegisterValue(float Value);
 	/**
 	 * To use if the m_meditationValues array has only 1 or 2 values.
 	 * Assigns the one or two only values present in m_meditationValues to m_prevAvg and m_currAvg.
