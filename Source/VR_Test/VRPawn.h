@@ -21,7 +21,7 @@ class VR_TEST_API AVRPawn : public APawn
 	FVector m_prevRightHandLocation;
 	float m_momentOfInertia = 4.f;
 
-	float m_maxHandSpeedThreshold = 3.f;
+	float m_maxHandSpeedThreshold = 2.f;
 	/** Min drag coefficient produced by hand movement (when hands parallel to hand direction) */
 	float cdMin = 0.1f;
 	/** Max drag coefficient produced by hand movement (when hands perpendiculqr to hand direction) */
@@ -88,7 +88,7 @@ public:
 	float interpDuration;
 	/** Drag applied to movement produced by controllers / hand movement in air */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
-	float drag = .01f;
+	float drag = .5f;
 	/** At what percentage of the HMD height the center of mass will considered to be? */
 	UPROPERTY(EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
 	float centerOfMassHeightRateRelativeToHMD = 0.8f;
@@ -105,10 +105,19 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	bool bGrounded = false;
 
+	bool temp = true;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	/**
+	 * Calculates Drag force created from the hand movement, using the Drag Equation.
+	 * @param Force		Force
+	 * @param DeltaTime	DeltaTime
+	 * @return			Drag force
+	 */
+	FVector&& CalculateDragForce(FVector Force, float DeltaTime) const;
 	/**
 	 * Calculates the new relaxation value and evaluates whether the relaxed state should change.
 	 * @param DeltaSeconds	DeltaTime
@@ -136,7 +145,7 @@ protected:
 	UFUNCTION()
 	void BecomeAirborne(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -151,16 +160,16 @@ public:
 	bool ReachedTargetVelocity();
 	/**
 	 * Sets the duration the interpolation to reach the max rise speed during the intro should take.
-	 * @param value			duration
+	 * @param Value			duration
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SetIntroInterpDuration(float value);
+	void SetIntroInterpDuration(float Value);
 	/**
 	 * Sets the duration the interpolation to reach the max rise speed should take.
-	 * @param value			duration
+	 * @param Value			duration
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SetInterpDuration(float value);
+	void SetInterpDuration(float Value);
 	/**
 	 * Evaluates whether or not bRelaxed should change.
 	 * @return True if bRelaxed should get inverted. False otherwise.
@@ -169,10 +178,10 @@ public:
 	bool ShouldChangeState();
 	/**
 	 * Registers a new value into m_meditationValues, and pops/deletes the last one.
-	 * @param value			New value to be registered
+	 * @param Value			New value to be registered
 	 */
 	UFUNCTION(BlueprintCallable)
-	void RegisterValue(float value);
+	void RegisterValue(float Value);
 	/**
 	 * To use if the m_meditationValues array has only 1 or 2 values.
 	 * Assigns the one or two only values present in m_meditationValues to m_prevAvg and m_currAvg.
