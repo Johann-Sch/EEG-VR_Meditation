@@ -120,19 +120,24 @@ protected:
 	FVector CalculateDragForce(FVector Force, float DeltaTime) const;
 	/**
 	 * Calculates the new relaxation value and evaluates whether the relaxed state should change.
-	 * @param DeltaSeconds	DeltaTime
+	 * @param DeltaTime	DeltaTime
 	 */
-	void UpdateRelaxation(float DeltaSeconds);
+	void UpdateRelaxation(float DeltaTime);
 	/**
 	 * Calculates the new up velocity and sets the characters z-velocity with it.
-	 * @param DeltaSeconds	DeltaTime
+	 * @param DeltaTime	DeltaTime
 	 */
-	void UpdateUpVelocity(float DeltaSeconds);
+	void UpdateUpVelocity(float DeltaTime);
 	/**
 	 * Introduction that calculates the new up velocity and sets the characters z-velocity with it.
-	 * @param DeltaSeconds	DeltaTime
+	 * @param DeltaTime	DeltaTime
 	 */
-	void IntroUpdateUpVelocity(float DeltaSeconds);
+	void IntroUpdateUpVelocity(float DeltaTime);
+	/**
+	 * To use during flying in air step, calculates the new velocity and sets the characters velocity with it.
+	 * @param DeltaTime	DeltaTime
+	 */
+	void UpdateFlyingVelocity(float DeltaTime);
 	/**
 	 * Called when Landing. 
 	 */
@@ -204,4 +209,9 @@ public:
 	*/
 	UFUNCTION(BlueprintCallable)
 	void BindDefaultRiseTick();
+	/**
+	* Bind flying in air tick implementation to tick function.
+	*/
+	UFUNCTION(BlueprintCallable)
+	void BindFlyingTick();
 };

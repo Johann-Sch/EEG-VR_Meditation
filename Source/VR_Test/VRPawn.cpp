@@ -83,7 +83,73 @@ void AVRPawn::BeginPlay()
 void AVRPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	tickEvent.Broadcast(DeltaTime);
+}
+
+FVector AVRPawn::CalculateDragForce(FVector Force, float DeltaTime) const
+{
+	// convert in m/s
+	float m_s = 100.f * DeltaTime;
+	Force /= m_s;
 	
+	/* Speed in drag equation is clamped to reflect reality and avoid big jumps caused by the squared velocity.
+	 * Lowering the force and increasing the resulting acceleration permits faster movements and avoids big jumps.
+	 */
+	Force /= CHEAT_QUOTIENT;
+	
+	const float length = FMath::Clamp(Force.Length(), 0.f, m_maxHandSpeedThreshold);
+	const float ratio = length / m_maxHandSpeedThreshold;
+	const float cd = FMath::Lerp(cdMin, cdMax, ratio);	// drag coef and surface area proportional to speed for now
+	const float A = FMath::Lerp(AMin, AMax, ratio);			// TODO will be made proportional to hand/controller orientation
+	
+	return Force.GetSafeNormal() * (.5f * p * cd * A * FMath::Square(length));
+}
+
+void AVRPawn::UpdateRelaxation(float DeltaTime)
+{
+	if (m_relaxationInterpTime <= 1.f)
+		relaxationValue = FMath::Lerp(m_prevAvg, m_currAvg, m_relaxationInterpTime);
+	m_relaxationInterpTime += DeltaTime;
+		
+	if (ShouldChangeState())
+	{
+		bRelaxed = !bRelaxed;
+		m_targetZVelocity = bRelaxed ? riseVelocity : fallVelocity;
+	}
+}
+
+void AVRPawn::UpdateUpVelocity(float DeltaTime)
+{
+	// Ignore if falling but already on ground
+	if (!bRelaxed && bGrounded)
+		return;
+	
+	// Interpolate the velocity towards the target velocity
+	if (!ReachedTargetVelocity())
+		z = FMath::FInterpConstantTo(z, m_targetZVelocity, DeltaTime, m_interpSpeed);
+
+	AddActorWorldOffset(DeltaTime * FVector(0.f, 0.f, z));
+}
+
+void AVRPawn::IntroUpdateUpVelocity(float DeltaTime)
+{
+	// Ignore if falling but already on ground
+	if (!bRelaxed && bGrounded)
+		return;
+	
+	// Interpolate the velocity towards the target velocity
+	if (!ReachedTargetVelocity())
+	{
+		m_introZInterpValue += DeltaTime * m_interpSpeed;
+		z = InterpEaseInOut(0.f, m_targetZVelocity, FMath::Clamp(m_introZInterpValue, 0.f, 1.f), .3f, .5f);
+		UE_LOG(LogRelax, Log, TEXT("interpspeed %f, alpha=%f vel %f ?= target %f"), m_interpSpeed, m_introZInterpValue, z, m_targetZVelocity)
+	}
+
+	AddActorWorldOffset(DeltaTime * FVector(0.f, 0.f, z));
+}
+
+void AVRPawn::UpdateFlyingVelocity(float DeltaTime)
+{
 	FVector left = MotionControllerLeft->GetRelativeLocation();
 	FVector right = MotionControllerRight->GetRelativeLocation();
 	FVector leftForce = left - m_prevLeftHandLocation;
@@ -117,74 +183,10 @@ void AVRPawn::Tick(float DeltaTime)
 	FQuat NewRotation = GetActorRotation().Quaternion() * FQuat::MakeFromEuler(angularVelocity * DeltaTime);
 	
 	SetActorLocationAndRotation(NewPosition, NewRotation);
-	
-	//TickEvent.Broadcast(DeltaTime);
-}
-
-FVector AVRPawn::CalculateDragForce(FVector Force, float DeltaTime) const
-{
-	// convert in m/s
-	float m_s = 100.f * DeltaTime;
-	Force /= m_s;
-	
-	/* Speed in drag equation is clamped to reflect reality and avoid big jumps caused by the squared velocity.
-	 * Lowering the force and increasing the resulting acceleration permits faster movements and avoids big jumps.
-	 */
-	Force /= CHEAT_QUOTIENT;
-	
-	const float length = FMath::Clamp(Force.Length(), 0.f, m_maxHandSpeedThreshold);
-	const float ratio = length / m_maxHandSpeedThreshold;
-	const float cd = FMath::Lerp(cdMin, cdMax, ratio);	// drag coef and surface area proportional to speed for now
-	const float A = FMath::Lerp(AMin, AMax, ratio);			// TODO will be made proportional to hand/controller orientation
-	
-	return Force.GetSafeNormal() * (.5f * p * cd * A * FMath::Square(length));
-}
-
-void AVRPawn::UpdateRelaxation(float DeltaSeconds)
-{
-	if (m_relaxationInterpTime <= 1.f)
-		relaxationValue = FMath::Lerp(m_prevAvg, m_currAvg, m_relaxationInterpTime);
-	m_relaxationInterpTime += DeltaSeconds;
-		
-	if (ShouldChangeState())
-	{
-		bRelaxed = !bRelaxed;
-		m_targetZVelocity = bRelaxed ? riseVelocity : fallVelocity;
-	}
-}
-
-void AVRPawn::UpdateUpVelocity(float DeltaSeconds)
-{
-	// Ignore if falling but already on ground
-	if (!bRelaxed && bGrounded)
-		return;
-	
-	// Interpolate the velocity towards the target velocity
-	if (!ReachedTargetVelocity())
-		z = FMath::FInterpConstantTo(z, m_targetZVelocity, DeltaSeconds, m_interpSpeed);
-
-	AddActorWorldOffset(DeltaSeconds * FVector(0.f, 0.f, z));
-}
-
-void AVRPawn::IntroUpdateUpVelocity(float DeltaSeconds)
-{
-	// Ignore if falling but already on ground
-	if (!bRelaxed && bGrounded)
-		return;
-	
-	// Interpolate the velocity towards the target velocity
-	if (!ReachedTargetVelocity())
-	{
-		m_introZInterpValue += DeltaSeconds * m_interpSpeed;
-		z = InterpEaseInOut(0.f, m_targetZVelocity, FMath::Clamp(m_introZInterpValue, 0.f, 1.f), .3f, .5f);
-		UE_LOG(LogRelax, Log, TEXT("interpspeed %f, alpha=%f vel %f ?= target %f"), m_interpSpeed, m_introZInterpValue, z, m_targetZVelocity)
-	}
-
-	AddActorWorldOffset(DeltaSeconds * FVector(0.f, 0.f, z));
 }
 
 void AVRPawn::Landed(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+                     int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	bGrounded = true;
 }
@@ -272,4 +274,10 @@ void AVRPawn::BindDefaultRiseTick()
 	tickEvent.Clear();
 	tickEvent.AddUObject(this, &AVRPawn::UpdateRelaxation);	
 	tickEvent.AddUObject(this, &AVRPawn::UpdateUpVelocity);
+}
+
+void AVRPawn::BindFlyingTick()
+{
+	tickEvent.Clear();
+	tickEvent.AddUObject(this, &AVRPawn::UpdateFlyingVelocity);
 }
