@@ -32,10 +32,10 @@ struct FFloatingData
 	float mass = 65.0f;
 	
 	/** Drag applied to movement produced by controllers / hand movement in air */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"))
 	float drag = .5f;
 	/** At what percentage of the HMD height the center of mass will considered to be? */
-	UPROPERTY(EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
+	UPROPERTY(EditAnywhere, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"))
 	float centerOfMassHeightRateRelativeToHMD = 0.8f;
 
 	void Init();
@@ -75,22 +75,22 @@ struct FMeditationData
 
 	/** Rise velocity when relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
-	float riseVelocity;
+	float riseVelocity = 10.f;
 	/** Fall velocity when not relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMax="0"), Category = "Meditation")
-	float fallVelocity;
+	float fallVelocity = -10.f;
 	/** Required rate of the values corresponding to the opposite state to change state (relaxed state > 50 not relaxed state < 50) */
 	UPROPERTY(EditDefaultsOnly, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
-	float oppositeStateThreshold;
+	float oppositeStateThreshold = .7f;
 	/** Time/Duration it should take to reach the target velocity (rise or fall velocity) when changing state */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="0"), Category = "Meditation")
-	float interpDuration;
+	float interpDuration = 3.f;
 	/** Current relaxation value, based on the current frame's interpolation between m_prevAvg and m_currAvg */
 	UPROPERTY(BlueprintReadOnly)
 	float relaxationValue;
 	/** Number of stored relaxation values, decides how many previous values should be used to compute the relaxation average */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (ClampMin="1"), Category = "Meditation")
-	int relaxationQueueSize;
+	int relaxationQueueSize = 5;
 	UPROPERTY(BlueprintReadOnly)
 	bool bRelaxed = false;
 	
@@ -108,9 +108,9 @@ class VR_TEST_API AVRPawn : public APawn
 	FVector m_prevLeftHandLocation;
 	FVector m_prevRightHandLocation;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta=(AllowPrivateAccess=true))
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="MainFeatures", DisplayName="Floating", meta=(AllowPrivateAccess=true))
 	FFloatingData fd;
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta=(AllowPrivateAccess=true))
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="MainFeatures", DisplayName="Meditation", meta=(AllowPrivateAccess=true))
 	FMeditationData md;
 
 	/** Components */
