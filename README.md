@@ -3,6 +3,7 @@ Development of a VR experience with EEG sensors
 
 ### Background explanation
 Thanks to a partnership between my school, Isart Digital, and a univeristy in Japan, the Tokyo univeristy of technology, I had the opportunity to do a 1 year research in Japan, Japan being my dream country that I long wanted to visit for an extended period of time.
+
 For my research, I decided to explore about the usage of EEG to improve immersion sensation in VR.
 
 ### Technical environment
@@ -20,12 +21,16 @@ My research was divided in 4 blocs:
 
 I learnt the basics of EEG, about existing EEG headsets, and about the current state of the art of EEG and how it is used in various fields, and more thoroughly about VR and Games.
 This was done through reading scientific papers, exploring EEG manufacturer websites, forums, educational videos...
+
 I then configured the equipment and the software, and setted up communication between the EEG headset and the different softwares to enable the game engine to receive EEG data.
+
 When the basic setup was done, I tested the EEG headsets, Emotiv Epoc first, and later the Neurosky Mindwave.
+
 After a first successful attempt of using the EEG data in unreal engine, with a visual orb changing its color depending on the user's mental state, I looked into some ideas to develop a prototype using EEG values.
 
 ### Prototype
 I decided to create a meditation prototype using the meditative state provided by Neurosky Mindwave.
+
 My goal was to create a relaxing experience in the form of a contemplative game, first by ascending more and more as long as you're relaxed, and when you reached a sufficient height, by enabling the user to move with the VR controllers, giving the feeling of floating in the air or swimming in the water. Thanks to the movement the user could explore a peacful place, and be transported into a world of exoticism, like somewhere in space, high and unusual mountains from the other side of the globe, a zen garden etc.
 
 #### These were the steps for the prototype development:
