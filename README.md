@@ -40,11 +40,13 @@ My goal was to create a relaxing experience in the form of a contemplative game,
 - Add a textual tutorial
 - Added movement in the air with VR controllers
 #### Remaining tasks from my initial plan:
-- Polishing the movement to make them more smooth so that movements are as authentic as possible to the movements of the hands
+- Polishing the movement to make them more smooth and more faithful to the hand movements
 - Integration of a map to make exploration relaxing and enjoyable
 - Integrate localization to support multiple languages for explanatory texts
 
+Moving in VR is a difficult topic as moving with the joystick can cause motion sickness. Moving with the hands can give the feeling of moving a wheel chair or swimming and seem to be less prone to motion sickness, but it needs to feel realistic to avoid it.
+
 [You can see the prototype here](https://youtu.be/DAHYYUaiII8)
 
-On the video I got lucky and was relaxed enough to rise almost non-stop.
+On the video I got lucky and was relaxed enough to rise almost non-stop which doesn't happen usually.
 Bear in mind that as this was research-oriented around EEG, there isn't any fancy juicyness or gameplay.
