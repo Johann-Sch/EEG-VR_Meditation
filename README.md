@@ -31,17 +31,17 @@ After a first successful attempt of using the EEG data in unreal engine, with a 
 ### Prototype
 I decided to create a meditation prototype using the meditative state provided by Neurosky Mindwave.
 
-My goal was to create a relaxing experience in the form of a contemplative game, first by ascending more and more as long as you're relaxed, and when you reached a sufficient height, by enabling the user to move with the VR controllers, giving the feeling of floating in the air or swimming in the water. Thanks to the movement the user could explore a peacful place, and be transported into a world of exoticism, like somewhere in space, high and unusual mountains from the other side of the globe, a zen garden etc.
+My goal was to create a relaxing experience in the form of a contemplative game, first by ascending more and more as long as the user is relaxed, and when he reaches a sufficient height, enabling the user to move with the VR controllers, to give the feeling of floating in the air or swimming in the water. Thanks to the movement the user could explore a peacful place, and be transported into a world of exoticism, like somewhere in space, high and unusual mountains from the other side of the globe, a zen garden etc.
 
 #### These were the steps for the prototype development:
 - Setting up the communication between unreal engine and the device to receive the meditation value inside Unreal Engine
-- Development of an algorithm adapting the meditation value provided to enhance the experience
+- Development of an algorithm adapting the meditation value provided to overcome its constraints because the value fluctuates too fast to be usable for this usage
 - Raising the player when in a meditative state, and lower him/her otherwise
-- Add a text tutorial
+- Add a textual tutorial
 - Added movement in the air with VR controllers
 #### Remaining tasks from my initial plan:
-- Polishing the movement to make them more smooth so that movements are as authentic as possible to the movement of the hands
-- Integration of a pretty map to make exploration relaxing and enjoyable
+- Polishing the movement to make them more smooth so that movements are as authentic as possible to the movements of the hands
+- Integration of a map to make exploration relaxing and enjoyable
 - Integrate localization to support multiple languages for explanatory texts
 
 [You can see the prototype here](https://youtu.be/DAHYYUaiII8)
