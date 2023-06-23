@@ -6,9 +6,9 @@ Thanks to a partnership between my school, Isart Digital, and a univeristy in Ja
 For my research, I decided to explore about the usage of EEG to improve immersion sensation in VR.
 
 ### Technical environment
-Meta Quest 2 as VR headset
-Emotiv Epoc+ and Neurosky Mindwave Mobile 2 as EEG sensors
-Unreal Engine 5 (C++ & Blueprint), OpenViBE
+- Meta Quest 2 as VR headset
+- Emotiv Epoc+ and Neurosky Mindwave Mobile 2 as EEG sensors
+- Unreal Engine 5 (C++ & Blueprint), OpenViBE
 
 ### Research content
 My research was divided in 4 blocs:
@@ -29,17 +29,17 @@ I decided to create a meditation prototype using the meditative state provided b
 My goal was to create a relaxing experience in the form of a contemplative game, first by ascending more and more as long as you're relaxed, and when you reached a sufficient height, by enabling the user to move with the VR controllers, giving the feeling of floating in the air or swimming in the water. Thanks to the movement the user could explore a peacful place, and be transported into a world of exoticism, like somewhere in space, high and unusual mountains from the other side of the globe, a zen garden etc.
 
 #### These were the steps for the prototype development:
-	- Setting up the communication between unreal engine and the device to receive the meditation value inside Unreal Engine
-	- Development of an algorithm adapting the meditation value provided to enhance the experience
-	- Raising the player when in a meditative state, and lower him/her otherwise
-	- Add a text tutorial
-	- Added movement in the air with VR controllers
+- Setting up the communication between unreal engine and the device to receive the meditation value inside Unreal Engine
+- Development of an algorithm adapting the meditation value provided to enhance the experience
+- Raising the player when in a meditative state, and lower him/her otherwise
+- Add a text tutorial
+- Added movement in the air with VR controllers
 #### Remaining tasks from my initial plan:
-	- Polishing the movement to make them more smooth so that movements are as authentic as possible to the movement of the hands
-	- Integration of a pretty map to make exploration relaxing and enjoyable
-	- Integrate localization to support multiple languages for explanatory texts
+- Polishing the movement to make them more smooth so that movements are as authentic as possible to the movement of the hands
+- Integration of a pretty map to make exploration relaxing and enjoyable
+- Integrate localization to support multiple languages for explanatory texts
 
-You can see the prototype here:
-https://youtu.be/DAHYYUaiII8
-On this run I got lucky and was relaxed enough to rise almost non-stop.
+[You can see the prototype here](https://youtu.be/DAHYYUaiII8)
+
+On the video I got lucky and was relaxed enough to rise almost non-stop.
 Bear in mind that as this was research-oriented around EEG, there isn't any fancy juicyness or gameplay.
