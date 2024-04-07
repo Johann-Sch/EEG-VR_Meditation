@@ -2,7 +2,7 @@
 Development of a VR experience with EEG sensors
 
 ### Background explanation
-Thanks to a partnership between my school and a university in Japan, I had the opportunity to do a 1 year research in Japan, Japan being my dream country that I long wanted to visit for an extended period of time.
+Thanks to a partnership between my school ISART Digital, and the Tokyo University of Technology, I had the opportunity to do a 1 year research in Japan, Japan being my dream country that I long wanted to visit for an extended period of time.
 
 For my research, I decided to explore about the usage of EEG to improve immersion sensation in VR.
 
