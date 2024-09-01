@@ -79,7 +79,10 @@ struct FMeditationData
 	/** Fall velocity when not relaxed */
 	UPROPERTY(EditAnywhere, meta = (ClampMax="0"), Category = "Meditation")
 	float fallVelocity = -10.f;
-	/** Required rate of the values corresponding to the opposite state to change state (relaxed state > 50 not relaxed state < 50) */
+	/** Threshold above which a value is considered as relaxed */
+	UPROPERTY(EditDefaultsOnly, meta = (ClampMin="0", ClampMax="100", UIMin="0", UIMax="100"), Category = "Meditation")
+	float relaxedThreshold = 50.f;
+	/** Required rate of the values corresponding to the opposite state to change state (relaxed state > relaxedThreshold, not relaxed state < relaxedThreshold) */
 	UPROPERTY(EditDefaultsOnly, meta = (ClampMin="0", ClampMax="1", UIMin="0", UIMax="1"), Category = "Meditation")
 	float oppositeStateThreshold = .7f;
 	/** Time/Duration it should take to reach the target velocity (rise or fall velocity) when changing state */
