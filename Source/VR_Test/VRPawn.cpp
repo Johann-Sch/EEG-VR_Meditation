@@ -14,23 +14,23 @@
 #define CHEAT_FACTOR 20.f
 #define CHEAT_ANGULAR_FACTOR (CHEAT_FACTOR * 2.f)
 
-FVector FFloatingData::CalculateDragForce(FVector Force, float DeltaTime) const
+FVector FFloatingData::CalculateDragForce(FVector DeltaPos, float DeltaTime) const
 {
-	// convert in m/s
+	// m/s converter
 	float m_s = 100.f * DeltaTime;
-	Force /= m_s;
+	FVector velocity = DeltaPos / m_s;
 	
 	/* Speed in drag equation is clamped to reflect reality and avoid big jumps caused by the squared velocity.
 	 * Lowering the force and increasing the resulting acceleration permits faster movements and avoids big jumps.
 	 */
-	Force /= CHEAT_QUOTIENT;
+	velocity /= CHEAT_QUOTIENT;
 	
-	const float length = FMath::Clamp(Force.Length(), 0.f, maxHandSpeedThreshold);
-	const float ratio = length / maxHandSpeedThreshold;
-	const float cd = FMath::Lerp(cdMin, cdMax, ratio);	// drag coef and surface area proportional to speed for now
-	const float A = FMath::Lerp(AMin, AMax, ratio);			// TODO will be made proportional to hand/controller orientation
+	const float length = FMath::Clamp(velocity.Length(), 0.f, maxHandSpeedThreshold);	// magnitude of the velocity
+	const float ratio = length / maxHandSpeedThreshold;					// drag coef and surface area proportional to speed for now
+	const float cd = FMath::Lerp(cdMin, cdMax, ratio);					// drag coef
+	const float A = FMath::Lerp(AMin, AMax, ratio);						// cross-sectional area // TODO will be made proportional to hand/controller orientation
 	
-	return Force.GetSafeNormal() * (.5f * p * cd * A * FMath::Square(length));
+	return velocity.GetSafeNormal() * (.5f * p * cd * A * FMath::Square(length));
 }
 
 void FMeditationData::LerpRelaxation(float DeltaTime)
@@ -110,7 +110,7 @@ void AVRPawn::BeginPlay()
 	m_prevRightHandLocation = MotionControllerRight->GetRelativeLocation();
 
 	fd.centerOfMass = Camera->GetRelativeLocation();
-	fd.centerOfMass.Z *= fd.centerOfMassHeightRateRelativeToHMD;
+	fd.centerOfMass.Z *= fd.centerOfMassHeightRateRelativeToHMD; // We use a center of mass near shoulder height as we don't have legs information
 }
 
 // Called every frame
@@ -161,27 +161,32 @@ void AVRPawn::IntroUpdateUpVelocity(float DeltaTime)
 
 void AVRPawn::UpdateFlyingVelocity(float DeltaTime)
 {
+	// hands location
 	FVector left = MotionControllerLeft->GetRelativeLocation();
 	FVector right = MotionControllerRight->GetRelativeLocation();
+	// hands delta position, distance since last frame
 	FVector leftForce = left - m_prevLeftHandLocation;
 	FVector rightForce = right - m_prevRightHandLocation;
 	m_prevLeftHandLocation = left;
 	m_prevRightHandLocation = right;
 
-	// computing drag created by water/air resistance
+	// applying drag created by water/air resistance to compute forces produced by the hands
 	leftForce = fd.CalculateDragForce(leftForce, DeltaTime);
 	rightForce = fd.CalculateDragForce(rightForce, DeltaTime);
 	
-	FVector leftRelPos = MotionControllerLeft->GetRelativeLocation() - fd.centerOfMass;
-	FVector rightRelPos = MotionControllerRight->GetRelativeLocation() - fd.centerOfMass;
-	
+	// hands position relative to shoulder height
+	FVector leftRelPos = left - fd.centerOfMass;
+	FVector rightRelPos = right - fd.centerOfMass;
+
+	// torque resulting from hand movements 
 	FVector leftTorque = FVector::CrossProduct(leftForce, leftRelPos);
 	FVector rightTorque = FVector::CrossProduct(rightForce, rightRelPos);
 
-	FVector acceleration = -(leftForce + rightForce) / fd.mass;
-	acceleration = GetActorTransform().TransformVector(acceleration);
+	FVector acceleration = -(leftForce + rightForce) / fd.mass;		// acceleration resulting from hands pushing against imaginary water (=> opposite direction of the hand movement/force)
+	acceleration = GetActorTransform().TransformVector(acceleration);	// get acceleration in world ref
 
-	FVector angularAcceleration = (leftTorque + rightTorque) / fd.momentOfInertia; //(torque - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
+	FVector angularAcceleration = (leftTorque + rightTorque) / fd.momentOfInertia;	// angular acculeration resulting from hands torques. The more similar the movements of the two hands, the lower the angular acceleration, and the opposite
+	//(torque - FVector::CrossProduct(angularVelocity, angularVelocity * m_momentOfInertia)) / m_momentOfInertia;
 	// constraint rotation only on z for now
 	angularAcceleration = GetActorTransform().TransformVector({0.f, 0.f, angularAcceleration.Z});
 	
