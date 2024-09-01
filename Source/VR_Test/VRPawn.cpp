@@ -232,16 +232,18 @@ void AVRPawn::SetInterpDuration(float Value)
 
 bool AVRPawn::ShouldChangeState()
 {
-	if (md.bRelaxed && md.relaxationValue < 50.f || !md.bRelaxed && md.relaxationValue >= 50.f)
+	// if relaxation value does not represent state, examine whether to change state or not
+	if (md.bRelaxed && md.relaxationValue < md.relaxedThreshold || !md.bRelaxed && md.relaxationValue >= md.relaxedThreshold)
 	{
 		int unrelaxedValueCount = 0;
 	
 		for (int i = 0; i < md.relaxationQueueSize; ++i)
-			if (md.m_meditationValues[i] < 50.f)
+			if (md.m_meditationValues[i] < md.relaxedThreshold)
 				unrelaxedValueCount++;
-
+		//Rate of values considered as not relaxed
 		const float unrelaxedRate = static_cast<float>(unrelaxedValueCount) / static_cast<float>(md.relaxationQueueSize);
-
+		
+		// Change state if the opposite state rate exceeds the specified threshold
 		return md.bRelaxed && unrelaxedRate >= md.oppositeStateThreshold
 			|| !md.bRelaxed && 1 - unrelaxedRate >= md.oppositeStateThreshold;
 	}
