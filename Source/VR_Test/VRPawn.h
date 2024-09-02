@@ -96,7 +96,11 @@ struct FMeditationData
 	int relaxationQueueSize = 5;
 	UPROPERTY(BlueprintReadOnly)
 	bool bRelaxed = false;
-	
+
+	/**
+	 * Smoothly lerps relaxation each frame so that the values arising from the EEG sensor act as a continuous graph with a smooth curve instead of a discrete graph.
+	 * @param DeltaTime	DeltaTime
+	 */
 	void LerpRelaxation(float DeltaTime);
 	void ChangeState();
 	void Init();
