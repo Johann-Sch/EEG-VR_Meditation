@@ -35,7 +35,7 @@ FVector FFloatingData::CalculateDragForce(FVector DeltaPos, float DeltaTime) con
 
 void FMeditationData::LerpRelaxation(float DeltaTime)
 {
-	if (relaxationInterpTime <= 1.f)
+	if (relaxationInterpTime <= 1.f)	// security to prevent the risk of overflow
 		relaxationValue = FMath::Lerp(prevAvg, currAvg, relaxationInterpTime);
 	relaxationInterpTime += DeltaTime;
 }
